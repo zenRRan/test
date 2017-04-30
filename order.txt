@@ -1,0 +1,17 @@
+create table student ( ID int , name char , sex char , department char )
+create table class ( ID int , name char )
+insert into student (values( 20143958 , zhenranran , m , CST ))
+insert into class (values( 312 , nlp ))
+insert into class (values( 12 ,  data_struct ))
+select * from class
+alter table class add teacher char
+select * from class
+update class set name = AI  where id = 312
+update class set name = AII  where id = 311
+alter table class add teacher
+insert into class (values( 100 ,  alogrithm , lijianzhong ))
+insert into class (values( 101 ,  math , lichunming ))
+delete from class where id = 12
+drop table student
+
+

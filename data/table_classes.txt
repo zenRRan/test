@@ -1,0 +1,1 @@
+student id int name char sex char department char
