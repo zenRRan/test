@@ -33,8 +33,10 @@ class compile(object):
     def __init__(self):
         self.class_file_path = "./data/table_classes.txt"
         self.table_path = "./data/table/"
+        self.index_path = "./index/"
         self.data_path = "./data/"
         self.file_type = ".txt"
+
         self.read_file()
         self.flag = False
 
@@ -186,10 +188,53 @@ class compile(object):
             for pro in ppts:
                 proIndex = self.table_dic[str[4]][::2].index(pro)
                 print("proIndex=", proIndex)
-                type = self.table_dic[str[4][1::2]][proIndex]
+                # print("dic %s is " %(str[4],))
+                type = self.table_dic[str[4]][1::2][proIndex]
                 print("type", type)
-
-
+                tablelines = self.read_table(str[4])
+                #判断是否有序
+                flag = True
+                buffer = []
+                for line in tablelines:
+                    buffer.append(line.split()[proIndex])
+                isfirst = True
+                bigger = True
+                smaller = True
+                if len(buffer) > 0:
+                    for i in buffer:
+                        if isfirst == True:
+                            first = i
+                            isfirst = False
+                        elif i > first:
+                            first = i
+                            if smaller:
+                                bigger = False
+                            else:
+                                flag = False
+                                break
+                        elif i == first:
+                            continue
+                        else:
+                            first = i
+                            if bigger:
+                                smaller = False
+                            else:
+                                flag = False
+                                break
+                if flag:
+                    step = 4
+                    indexData0 = buffer[::step+1]
+                    indexData1 = [i*step for i in len(indexData0)]
+                    file = open(self.index_path+str[2],'w')
+                    for i in len(indexData0):
+                        file.write(indexData0[i]+" "+indexData1[i]+'\n')
+                    print("create index %s on %s's %s succeed!" %(str[2],str[4],pro))
+                else:
+                    indexData = sorted(list(zip(buffer, list(range(len(buffer))))))
+                    file = open(self.index_path + str[2], 'w')
+                    for i in len(indexData):
+                        file.write(indexData[i][0] + " " + indexData1[i][1]+'\n')
+                    print("create index %s on %s's %s succeed!" % (str[2], str[4], pro))
             return True
         else:
             return False
