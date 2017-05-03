@@ -164,18 +164,31 @@ class compile(object):
 
     '''
     （8）CREATE INDEX 索引名 ON 关系名 (属性名,......,属性名)
-     CREATE INDEX aaa ON bbb ( cc , d )
+     create index class_ID on class (ID)
     '''
     def create_index_on(self, str):
-        self.read_table()
+        self.read_file()
         pattern = re.compile(r"create\s+index\s+\S+\s+on\s+\S+\s*\(\s*\S+(\s*,\s*\S+\s*)*\)")
         sent = " ".join(str)
         match = pattern.match(sent)
         if match and match.group() == sent:
-            print("create index on (...)")
-            if str[2] not in self.tables:
-                print("")
+            print(str[4], " ", self.table_names)
+            if str[4] not in self.table_names:
+                print("%s is not in tables !" %str[4])
                 return True
+            begin = sent.index("(")
+            end = sent.index(")")
+            ppts = sent[begin+1:end].split(",")
+            for pro in ppts:
+                if pro not in self.table_dic[str[4]]:
+                    print("%s is not in %s's properties!" %(pro,str[4]))
+                    return True
+            for pro in ppts:
+                proIndex = self.table_dic[str[4]][::2].index(pro)
+                print("proIndex=", proIndex)
+                type = self.table_dic[str[4][1::2]][proIndex]
+                print("type", type)
+
 
             return True
         else:

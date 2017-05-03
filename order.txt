@@ -13,5 +13,6 @@ insert into class (values( 100 ,  alogrithm , lijianzhong ))
 insert into class (values( 101 ,  math , lichunming ))
 delete from class where id = 12
 drop table student
+create index class_ID on class (ID)
 
 

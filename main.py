@@ -1,5 +1,5 @@
 import compile as cp
-import pandas as pd
+#import pandas as pd
 
 if __name__ == '__main__':
     print("************************************************")
