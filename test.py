@@ -1,3 +1,3 @@
-list = [1,2,3,4,5]
-print(list[0:-1:2])
-
+l = "asd sdf sdf"
+l = l.split()
+l[0].split()

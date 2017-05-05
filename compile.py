@@ -32,8 +32,9 @@ class compile(object):
 
     def __init__(self):
         self.class_file_path = "./data/table_classes.txt"
+        self.class_index_file = "./data/tables_index.txt"
         self.table_path = "./data/table/"
-        self.index_path = "./index/"
+        self.index_path = "./data/index/"
         self.data_path = "./data/"
         self.file_type = ".txt"
 
@@ -58,6 +59,8 @@ class compile(object):
         elif self.grant_on_to(str):
             return True
         elif self.create_index_on(str):
+            return True
+        elif self.drop_index(str):
             return True
         elif self.update_set(str):
             return True
@@ -174,7 +177,7 @@ class compile(object):
         sent = " ".join(str)
         match = pattern.match(sent)
         if match and match.group() == sent:
-            print(str[4], " ", self.table_names)
+            # print(str[4], " ", self.table_names)
             if str[4] not in self.table_names:
                 print("%s is not in tables !" %str[4])
                 return True
@@ -183,20 +186,25 @@ class compile(object):
             ppts = sent[begin+1:end].split(",")
             for pro in ppts:
                 if pro not in self.table_dic[str[4]]:
-                    print("%s is not in %s's properties!" %(pro,str[4]))
+                    print("%s is not in %s's properties!" %(pro, str[4]))
                     return True
             for pro in ppts:
+                self.write2indexfile(self.class_index_file,str[4], pro)
                 proIndex = self.table_dic[str[4]][::2].index(pro)
-                print("proIndex=", proIndex)
+                # print("proIndex=", proIndex)
                 # print("dic %s is " %(str[4],))
                 type = self.table_dic[str[4]][1::2][proIndex]
-                print("type", type)
+                # print("type", type)
                 tablelines = self.read_table(str[4])
                 #判断是否有序
                 flag = True
                 buffer = []
-                for line in tablelines:
-                    buffer.append(line.split()[proIndex])
+                if type == "int":
+                    for line in tablelines:
+                        buffer.append(int(line.split()[proIndex]))
+                else:
+                    for line in tablelines:
+                        buffer.append(line.split()[proIndex])
                 isfirst = True
                 bigger = True
                 smaller = True
@@ -224,32 +232,78 @@ class compile(object):
                 if flag:
                     step = 4
                     indexData0 = buffer[::step+1]
-                    indexData1 = [i*step for i in len(indexData0)]
-                    file = open(self.index_path+str[2],'w')
-                    for i in len(indexData0):
-                        file.write(indexData0[i]+" "+indexData1[i]+'\n')
+                    indexData1 = [i*(step+1) for i in range(len(indexData0))]
+                    file = open(self.index_path+str[2]+self.file_type,'w')
+                    for i in range(len(indexData0)):
+                        file.write(self.int2str(indexData0[i])+" "+self.int2str(indexData1[i])+'\n')
                     print("create index %s on %s's %s succeed!" %(str[2],str[4],pro))
                 else:
                     indexData = sorted(list(zip(buffer, list(range(len(buffer))))))
-                    file = open(self.index_path + str[2], 'w')
-                    for i in len(indexData):
-                        file.write(indexData[i][0] + " " + indexData1[i][1]+'\n')
+                    file = open(self.index_path + str[2]+self.file_type, 'w')
+                    for i in range(len(indexData)):
+                        file.write(indexData[i][0] + " " + self.int2str(indexData[i][1])+"\n")
                     print("create index %s on %s's %s succeed!" % (str[2], str[4], pro))
             return True
         else:
             return False
 
-
+    def int2str(self,s):
+        return str(s)
+    def readIndexFile(self):
+        file = open(self.class_index_file)
+        buffer = []
+        for line in file.readlines():
+            buffer.append(line.strip().split())
+        file.close()
+        return buffer
+    def write2indexfile(self,filepath,clas,pro):
+        classes =[e[0] for e in self.readIndexFile()]
+        pros = [e[1:] for e in self.readIndexFile()]
+        if clas in classes:
+            class_ps = pros[classes.index(clas)]
+            if pro in class_ps:
+                return
+            else:
+                class_ps.append(pro)
+        else:
+            classes.append(clas)
+            pros.append([pro])
+        file = open(filepath, "w")
+        for i in range(len(classes)):
+            print(pros)
+            file.write(classes[i]+" "+" ".join(pros[i])+"\n")
+        print("write to indexfile succeed!")
 
     '''
     （9）DROP INDEX 索引名
     '''
     def drop_index(self, str):
         if len(str) == 3 and str[0] == "drop" and str[1] == "index":
-            print("drop index ...")
-            return True
+            lines = self.readIndexFile()
+            clas = str[2].split("_")[0]
+            pro = str[2].split("_")[1]
+            classes = [line[0] for line in lines]
+            pros = [line[1:] for line in lines]
+            path = self.index_path+str[2]+self.file_type
+            if os.path.isfile(path):
+                if pro in pros[classes.index(clas)]:
+                    pros[classes.index(clas)].remove(pro)
+                    with open(self.class_index_file, "w") as file:
+                        for i in range(len(classes)):
+                            file.write(classes[i] + " " + " ".join(pros[i]) + "\n")
+                    os.remove(path)
+                    print("drop index %s succeed!" % str[2])
+                    return True
+                else:
+                    print("%s is not exist!" % pro)
+            else:
+                print("%s is not exist!" %str[2])
+
+
+
         else:
             return False
+
 
 
 
@@ -398,7 +452,7 @@ class compile(object):
                         dic = [dic[i] for i in range(1, len(dic), 2)]
                         length = len(dic)
                         if length != 1:
-                            length = length*2 -1
+                            length = length*2 - 1
                         if len(values) == length:
                             values = "".join(values).split(",")
                             output = []
@@ -481,7 +535,8 @@ class compile(object):
                 for line in tablelines:
                     lists.append(line.split())
                 for i in range(len(tablelines)):
-                    del lists[i][pro_index//2]
+                    if len(lists[i]) > pro_index//2:
+                        del lists[i][pro_index//2]
                 tablefile = open(self.table_path+str[2]+self.file_type,"w")
                 for line in lists:
                     tablefile.write(line+"\n")

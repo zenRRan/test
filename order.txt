@@ -8,11 +8,33 @@ alter table class add teacher char
 select * from class
 update class set name = AI  where id = 312
 update class set name = AII  where id = 311
-alter table class add teacher
+alter table class drop teacher
 insert into class (values( 100 ,  alogrithm , lijianzhong ))
 insert into class (values( 101 ,  math , lichunming ))
 delete from class where id = 12
 drop table student
 create index class_ID on class (ID)
+
+测试index
+create table class ( ID int , name char )
+
+insert into class (values( 0 , nlp ))
+insert into class (values( 1 , math_1 ))
+insert into class (values( 2 , db ))
+insert into class (values( 3 , picture ))
+insert into class (values( 4 , english ))
+insert into class (values( 4 , chinese ))
+insert into class (values( 6 , history ))
+insert into class (values( 8 , japanese ))
+insert into class (values( 8 , world ))
+insert into class (values( 9 , math_2 ))
+insert into class (values( 11 , math_3 ))
+insert into class (values( 14 , c ))
+insert into class (values( 15 , java ))
+insert into class (values( 19 , python ))
+
+create index class_ID on class (ID)
+
+drop index class_id
 
 
