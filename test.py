@@ -1,5 +1,3 @@
-l = "asd sdf sdf"
-l = l.split()
-l[0].split()
-
-print(str("dd"))
+l = ['123',[],[]]
+l.remove([])
+print(l)

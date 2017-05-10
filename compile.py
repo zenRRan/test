@@ -199,7 +199,7 @@ class compile(object):
                     print("%s is not in %s's properties!" %(pro, str[4]))
                     return True
             for pro in ppts:
-                self.write2indexfile(self.class_index_file,str[4], pro)
+                #self.write2indexfile(self.class_index_file,str[4], pro)
                 proIndex = self.table_dic[str[4]][::2].index(pro)
                 # print("proIndex=", proIndex)
                 # print("dic %s is " %(str[4],))
@@ -239,6 +239,10 @@ class compile(object):
                             else:
                                 flag = False
                                 break
+                type = "unorder"
+                if  flag:
+                    type = "order"
+                self.write2indexfile(self.class_index_file, str[4], pro,type)
                 if flag:
                     step = 4
                     indexData0 = buffer[::step+1]
@@ -266,18 +270,22 @@ class compile(object):
             buffer.append(line.strip().split())
         file.close()
         return buffer
-    def write2indexfile(self,filepath,clas,pro):
+    def write2indexfile(self,filepath,clas,pro,type):
         classes =[e[0] for e in self.readIndexFile()]
-        pros = [e[1:] for e in self.readIndexFile()]
+        pros = [e[1::2] for e in self.readIndexFile()]
+        types = [e[2::2] for e in self.readIndexFile()]
         if clas in classes:
             class_ps = pros[classes.index(clas)]
             if pro in class_ps:
                 return
             else:
                 class_ps.append(pro)
+                class_ps.append(type)
         else:
             classes.append(clas)
             pros.append([pro])
+            pros.append([type])
+
         file = open(filepath, "w")
         for i in range(len(classes)):
             file.write(classes[i]+" "+" ".join(pros[i])+"\n")
@@ -305,10 +313,14 @@ class compile(object):
             if os.path.isfile(path):
                 if pro in pros[classes.index(clas)]:
                     pros[classes.index(clas)].remove(pro)
+                    if pros[classes.index(clas)] == []:
+                        pros.remove([])
+                        del classes[clas]
                     with open(self.class_index_file, "w") as file:
                         for i in range(len(classes)):
                             file.write(classes[i] + " " + " ".join(pros[i]) + "\n")
                     os.remove(path)
+
                     print("drop index %s succeed!" % str[2])
                     return True
                 else:
