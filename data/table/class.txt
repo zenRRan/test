@@ -9,6 +9,5 @@
 8 world
 9 math_2
 11 math_3
-14 c
 15 java
 19 python

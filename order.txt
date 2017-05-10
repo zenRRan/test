@@ -15,6 +15,7 @@ delete from class where id = 12
 drop table student
 create index class_ID on class (ID)
 
+---------------------------------------------------------------
 测试index
 create table class ( ID int , name char )
 
@@ -36,5 +37,10 @@ insert into class (values( 19 , python ))
 create index class_ID on class (ID)
 
 drop index class_id
+
+insert 测试index
+insert into class (values( 5 , ai ))
+delete from class where id = 5
+update class set id = 101  where name = c
 
 

@@ -106,6 +106,10 @@ class compile(object):
                 file = open(self.table_path + str[2] + self.file_type, "w")
                 for i in range(len(table_lines)):
                     file.write(table_lines[i] + '\n')
+                file.close()
+                #-----------index---------------------
+                self.refresh_index_file(str[2],where_left)
+                # ------------------------------------
                 return True
         return False
     '''
@@ -143,6 +147,7 @@ class compile(object):
                 o = op.split("=")
                 op_left.append(o[0])
                 op_right.append(o[1])
+
             index_where = pros.index(where_left)
             table_lines = self.read_table(str[1])
             k = 0
@@ -160,6 +165,11 @@ class compile(object):
                 file = open(self.table_path + str[1] + self.file_type, "w")
                 for i in range(len(table_lines)):
                     file.write(table_lines[i]+'\n')
+                file.close()
+                for op in op_left:
+                    # -----------index---------------------
+                    self.refresh_index_file(str[1], op)
+                    # ------------------------------------
                 print("update succeed!")
                 return True
             else:
@@ -241,7 +251,7 @@ class compile(object):
                     indexData = sorted(list(zip(buffer, list(range(len(buffer))))))
                     file = open(self.index_path + str[2]+self.file_type, 'w')
                     for i in range(len(indexData)):
-                        file.write(indexData[i][0] + " " + self.int2str(indexData[i][1])+"\n")
+                        file.write(self.int2str(indexData[i][0]) + " " + self.int2str(indexData[i][1])+"\n")
                     print("create index %s on %s's %s succeed!" % (str[2], str[4], pro))
             return True
         else:
@@ -270,9 +280,16 @@ class compile(object):
             pros.append([pro])
         file = open(filepath, "w")
         for i in range(len(classes)):
-            print(pros)
             file.write(classes[i]+" "+" ".join(pros[i])+"\n")
-        print("write to indexfile succeed!")
+        file.close()
+        # print("write to indexfile succeed!")
+
+    def refresh_index_file(self,str,pro):
+        if str in self.index_classes and pro in self.index_properties[self.index_classes.index(str)]:
+            index_order = "create index " + str + "_" + pro + " on " + str + " (" + pro + ")"
+            index_order = index_order.strip().split()
+            self.create_index_on(index_order)
+            print("index %s_%s have been refreshed!" % (str, pro))
 
     '''
     （9）DROP INDEX 索引名
@@ -436,6 +453,25 @@ class compile(object):
                     data_dic = dict(zip(tables, datas))
         return False
 
+    def select_from_index(self, table, pro, data):
+        indexFilelines = self.readIndexFile()
+        tables = [line[0] for line in indexFilelines]
+        pros = [line[1:] for line in indexFilelines]
+        if table not in tables and pro not in pros[tables.index(table)]:
+            return None
+        output = []
+
+    def Cartesian_product(self, table1, table2=[]):
+        buffer = []
+        if table2 != []:
+            for line1 in table1:
+                for line2 in table2:
+                    buffer.append(line1.strip() + " " + line2.strip())
+        else:
+            buffer = " ".join(table1)
+        return buffer
+
+
 
     '''
     （4）INSERT INTO 关系名 [(<列名>, …,<列名>)]
@@ -449,6 +485,7 @@ class compile(object):
                     if str[-1] == "))":
                         values = str[4:-1]
                         dic = self.table_dic[str[2]]
+                        pros = [dic[i] for i in range(0, len(dic), 2)]
                         dic = [dic[i] for i in range(1, len(dic), 2)]
                         length = len(dic)
                         if length != 1:
@@ -465,10 +502,16 @@ class compile(object):
                                        return True
                                 else:
                                     output.append(values[i])
+
                             # output = "\n" + " ".join(output)
                             output = " ".join(output)+"\n"
                             self.insert2file(output, self.table_path+str[2]+self.file_type)
+                            for pro in pros:
+                                # --------------index--------------------------
+                                self.refresh_index_file(str[2], pro)
+                                # ---------------------------------------------
                             print("insert succeed!")
+
                             return True
                         else:
                             print("length is not suit !")
@@ -573,6 +616,17 @@ class compile(object):
             self.table_names = []
             self.property_type = []
             self.table_dic = []
+        file.close()
+
+        file = open(self.class_index_file)
+        readlines = file.readlines()
+        if len(readlines) != 0:
+            self.index_classes = [line.strip().split()[0] for line in readlines]
+            self.index_properties = [line.strip().split()[1:] for line in readlines]
+            pass
+        else:
+            self.index_classes = []
+            self.index_properties = []
         file.close()
 
 
