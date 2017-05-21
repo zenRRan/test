@@ -1,21 +1,42 @@
 import compile as cp
+import getpass
 #import pandas as pd
 
+def read_users():
+    file = open("data/users.txt")
+    names = []
+    passwords = []
+    for line in file.readlines():
+        line = line.strip().split()
+        names.append(line[0])
+        passwords.append(line[1])
+    return names, passwords
+
 if __name__ == '__main__':
-    print("************************************************")
-    print("the word or symbol of order are divided by space ")
-    print("            input over to exit                   ")
-    print("************************************************")
-    comp = cp.compile()
     while True:
-        # print(pd.read_table("./data/table_classes.txt", ))
-        order = input("SQL>>")
-        if len(order) > 2:
-            order = order.lower().strip().split()
-            if len(order) > 0 and order[0] == "over":
-                break
-            if not comp.compile(order):
-                print("wrong order !")
+        names, passwords = read_users()
+        name = input("name:")
+        if name not in names:
+            print("user %s is not exist!" %name)
+            continue
+
+        password = input("password:")
+        if password != passwords[names.index(name)]:
+            print("user %s's password is wrong!" % name)
+            continue
+        print("************************************************")
+        print("the word or symbol of order are divided by space ")
+        print("            input over to exit                   ")
+        print("************************************************")
+        comp = cp.compile(name)
+        while True:
+            order = input("SQL>>")
+            if len(order) > 2:
+                order = order.lower().strip().split()
+                if len(order) > 0 and order[0] == "over":
+                    break
+                if not comp.compile(order):
+                    print("wrong order !")
 
 
 
@@ -52,3 +73,14 @@ if __name__ == '__main__':
 # insert into class (values( 19 , python ))
 #
 # create index class_ID on class (ID)
+#select * from student,class
+#select * from student,class
+#select class.id from class
+#select class.id,class.name from class,student
+#select * from class,student where student.id = 20143958
+#select * from class,student where student.id > 20146665
+#select * from class,student where student.id > 20146665 and student.id = 20143958
+#select * from student where student.id > 20146665 and student.id = 20143958
+#select student.name,student.id from student where student.id = 20143958
+#select student.name,student.id,class.name from student,class where student.id > 20143958 and class.id = 0
+#grant 0100 on student to cy

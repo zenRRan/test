@@ -30,16 +30,29 @@ def read_table(self, filename)
 '''
 class compile(object):
 
-    def __init__(self):
+    def __init__(self, name):
         self.class_file_path = "./data/table_classes.txt"
         self.class_index_file = "./data/tables_index.txt"
         self.table_path = "./data/table/"
         self.index_path = "./data/index/"
         self.data_path = "./data/"
         self.file_type = ".txt"
-
+        self.name = name
         self.read_file()
         self.flag = False
+
+    def read_permission(self,table):
+        file = open("data/permission.txt")
+        permission = []
+        create, update, index, user = False, False, False, False
+        for line in file.readlines():
+            line = line.strip().split()
+            if line[0] == self.name and line[1] == table:
+                permission = line[2:]
+                break
+            if permission == []:
+                permission = ['0', '0', '0', '0']
+        return permission
 
     def compile(self, str):
         if self.create_table(str):
@@ -54,7 +67,7 @@ class compile(object):
             return True
         elif self.alter_table(str):
             return True
-        elif self.remove_on_from(str):
+        elif self.revoke_on_from(str):
             return True
         elif self.grant_on_to(str):
             return True
@@ -276,21 +289,25 @@ class compile(object):
         types = [e[2::2] for e in self.readIndexFile()]
         if clas in classes:
             class_ps = pros[classes.index(clas)]
+            types_ts = types[classes.index(clas)]
             if pro in class_ps:
                 return
             else:
                 class_ps.append(pro)
-                class_ps.append(type)
+                types_ts.append(type)
         else:
             classes.append(clas)
             pros.append([pro])
-            pros.append([type])
-
+            types.append([type])
         file = open(filepath, "w")
+        output = []
         for i in range(len(classes)):
-            file.write(classes[i]+" "+" ".join(pros[i])+"\n")
+            for j in range(len(pros[i])):
+                output.append(pros[i][j])
+                output.append(types[i][j])
+            file.write(classes[i]+" "+" ".join(output)+"\n")
+            output = []
         file.close()
-        # print("write to indexfile succeed!")
 
     def refresh_index_file(self,str,pro):
         if str in self.index_classes and pro in self.index_properties[self.index_classes.index(str)]:
@@ -312,10 +329,11 @@ class compile(object):
             path = self.index_path+str[2]+self.file_type
             if os.path.isfile(path):
                 if pro in pros[classes.index(clas)]:
+                    del pros[classes.index(clas)][pros[classes.index(clas)].index(pro)+1]
                     pros[classes.index(clas)].remove(pro)
                     if pros[classes.index(clas)] == []:
                         pros.remove([])
-                        del classes[clas]
+                        classes.remove(clas)
                     with open(self.class_index_file, "w") as file:
                         for i in range(len(classes)):
                             file.write(classes[i] + " " + " ".join(pros[i]) + "\n")
@@ -341,10 +359,35 @@ class compile(object):
     （13）GRANT 权限列表  //自己实现的所有SQL命令
      ON 关系名
      TO 用户列表
+     grant 1_1_0_0 on 
     '''
+    def write2permission(self,info):
+        with open("data/permission.txt","w") as file:
+            # print(info)
+            for line in info:
+                file.write(" ".join(line) + "\n")
+            file.close()
+
     def grant_on_to(self, str):
         if len(str) == 6 and str[0] == "grant" and str[2] == "on" and str[4] == "to":
+            if self.read_permission(str[3])[3] == "0":
+                print("Sorry! no this permission!")
+                return True
             print("grant ... on ... to ... ")
+            file = open("data/permission.txt")
+            info = []
+            flag = True
+            for line in file.readlines():
+                line = line.strip().split()
+                if line[0] == str[5] and line[1] == str[3]:
+                    line[2:] = str[1]
+                    flag = False
+                info.append(line)
+            if flag:
+                new = str[5] + " " + str[3] + " " + " ".join(list(str[1]))
+                info.append(new.split())
+            file.close()
+            self.write2permission(info)
             return True
         else:
             return False
@@ -354,19 +397,38 @@ class compile(object):
      ON 关系名
      FROM 用户列表
     '''
-    def remove_on_from(self, str):
-        if len(str) == 6 and str[0] == "remove" and str[2] == "on" and str[4] == "from":
-            print("remove ... on ...from ... ")
+    def revoke_on_from(self, str):
+        if len(str) == 6 and str[0] == "revoke" and str[2] == "on" and str[4] == "to":
+            if self.read_permission(str[3])[3] == "0":
+                print("Sorry! no this permission!")
+                return True
+            print("revoke ... on ... to ... ")
+            file = open("data/permission.txt")
+            info = []
+            flag = True
+            for line in file.readlines():
+                line = line.strip().split()
+                if line[0] == str[5] and line[1] == str[3]:
+                    line[2:] = str[1]
+                    flag = False
+                info.append(line)
+            if flag:
+                new = str[5] + " " + str[3] + " " + " ".join(list(str[1]))
+                info.append(new.split())
+            file.close()
+            self.write2permission(info)
             return True
         else:
             return False
-
 
     '''
     （12）CREATE USER 用户名 IDENTIFIED BY 密码
     '''
     def create_user(self, str):
         if str[0] == "create" and str[1] == "user" and str[3] == "identified" and str[4] == "by" and len(str) == 6:
+            if self.read_permission(str[3])[3] == "0":
+                print("Sorry! no this permission!")
+                return True
             path = self.data_path+"users"+self.file_type
             if not os.path.isfile(path):
                 file = open(path, "w")
@@ -377,9 +439,9 @@ class compile(object):
                 print("user name is have been applyed!")
                 file.close()
                 return True
-            file.write(str[2]+" "+str[5])
+            file.write(str[2]+" "+str[5]+"\n")
             file.close()
-            print("create user right!")
+            print("create user %s succeed!" %str[2])
             return True
         else:
             return False
@@ -410,6 +472,7 @@ class compile(object):
                 buffer.append(line.strip())
             return buffer
         return None
+
     '''
     （7）SELECT *|属性名列表
      FROM 关系名列表
@@ -418,60 +481,311 @@ class compile(object):
     def select(self, str):
         self.read_file()
         sent = " ".join(str)
-        pattern0 = re.compile(r'select(\s+\*\s+)from(\s\S+\s)*(where)?(\s\S+\s*)')
+        pattern0 = re.compile(r'select(\s+\*\s+)from(\s\S+\s)*(where)?(\s*\S+\s*)*')
+        pattern1 = re.compile(r'select(\s+\S+\s+)(\s*,\s*\S+\s+)*from(\s*\S+\s+)*where(\s*\S+\s*)*')
         match0 = pattern0.match(sent)
-        #select * from ... where ...
-        if match0 and match0.group() == sent:
-            from_end = sent.find("from")+4
-            where_begin = sent.find("where")
-            if where_begin < 0:
-                cur_str = "".join(str[3:]).split(",")
-                tables = []
-                for table in cur_str:
-                    if table in self.table_names:
-                        tables.append(table)
-                    else:
-                        print("%s is not in the table!" % table)
-                        return True
-                for table in tables:
-                    print("__________________________________________________________________________________")
-                    print("table name ", table)
-                    pro = self.table_dic[table][::2]
-                    for p in pro:
-                        print("%-15s" %p, end="")
-                    print()
-                    lines = self.read_table(table)
-                    if lines != None:
-                        for line in lines:
-                            l = line.split()
-                            for p in l:
-                                print("%-15s" % p, end="")
-                            print()
-                    else:
-                        print("%s is not opened!" % table)
-                return True
-
-
+        match1 = pattern1.match(sent)
+        # print(match0.group())
+        if (match0 and match0.group() == sent) or (match1 and match1.group() == sent):
+            x = self.select_table(str)
+            if  x != None:
+                tables, pros, output = self.select_table(str)
             else:
-                if from_end > 0 and where_begin > 0:
-                    tables = sent[from_end:where_begin]
-                    tables = tables.strip().split(",")
-                    datas = []
-                    for index in range(len(tables)):
-                        tables[index] = tables[index].strip()
-                        if tables[index] not in self.table_names:
-                            print("%s is not in the tables !" % tables[index])
-                        datas.append(self.read_table(tables[index]))
-                    data_dic = dict(zip(tables, datas))
+                return True
+            among_select_from = sent[sent.find("select")+6:sent.find("from")]
+            if among_select_from.strip() != "*":
+                select = among_select_from.strip().split(",")
+                for l in select:
+                    if l not in pros:
+                        print("%s is not in properties!" % l)
+                        return True
+                newoutput = []
+                newpros = []
+                for i in range(len(select)):
+                    newpros.append(pros[pros.index(select[i])])
+                flag = True
+                for i in range(len(select)):
+                    for j in range(len(output)):
+                        if flag == True:
+                            newoutput.append(output[j].split()[pros.index(select[i])])
+                        else:
+                            s = " "+output[j].split()[pros.index(select[i])]
+                            newoutput[j] += s
+                    flag = False
+                output = newoutput
+                pros = newpros
+            for i in pros:
+                print("%-20s" % i, end="")
+            # for i in range(len(pro)):
+            #     for line in pro[i]:
+            #         merge = tables[i]+"."+line
+            #         print("%-20s" % merge, end="")
+            print()
+            for line in output:
+                for l in line.strip().split():
+                    print("%-20s" % l, end="")
+                print()
+            return True
         return False
+
+
+
+
+    def select_table(self, str):
+        sent = " ".join(str)
+        from_end = sent.find("from") + 4
+        where_begin = sent.find("where")
+        if where_begin < 0:
+            cur_str = "".join(str[3:]).split(",")
+            tables = []
+            for table in cur_str:
+                # print(self.read_permission(table))
+                if self.read_permission(table)[1] == "0":
+                    print("Sorry! no this permission!")
+                    return None
+                if table in self.table_names:
+                    tables.append(table)
+                else:
+                    print("%s is not in the table!" % table)
+                    return None
+            output = []
+            pro = []
+            first = True
+            for table in tables:
+                if first == True:
+                    pro.append(self.table_dic[table][::2])
+                    output = self.read_table(table)
+                    # print("output1=", output)
+                    first = False
+                else:
+                    pro.append(self.table_dic[table][::2])
+                    output = self.Cartesian_product(output, self.read_table(table))
+                    # print("output2=", output)
+        else:
+            cur_str = sent[from_end:where_begin].strip().split(",")
+            tables = []
+            for table in cur_str:
+                if table in self.table_names:
+                    # print(self.read_permission(table))
+                    if self.read_permission(table)[1] == "0":
+                        print("Sorry! no this permission!")
+                        return None
+                    tables.append(table)
+                else:
+                    print("%s is not in the table!" % table)
+                    return None
+            output = []
+            pro = []
+            first = True
+            for table in tables:
+                if first == True:
+                    pro.append(self.table_dic[table][::2])
+                    output = self.read_table(table)
+                    # print("output1=", output)
+                    first = False
+                else:
+                    pro.append(self.table_dic[table][::2])
+                    output = self.Cartesian_product(output, self.read_table(table))
+
+            pros = []
+            for i in range(len(pro)):
+                for line in pro[i]:
+                    merge = tables[i] + "." + line
+                    pros.append(merge)
+            pro = pros
+            selectStr = sent[where_begin+5:].strip()
+            if "and" in selectStr:
+                and_index = selectStr.index("and")
+                and_left = selectStr[:and_index]
+                and_right = selectStr[and_index+3:]
+                left_list = and_left.strip().split()
+                right_list = and_right.strip().split()
+                new_output = []
+                # print("and", pro)
+                # print(selectStr)
+                # print(left_list)
+                # print(right_list)
+                if left_list[0] not in pro:
+                    print("%s is not in properties!" % left_list[0])
+                    return None
+                if right_list[0] not in pro:
+                    print("%s is not in properties!" % right_list[0])
+                    return None
+                # print(output)
+                if left_list[1] == ">":
+                    index = pro.index(left_list[0])
+                    for line in output:
+                        line = line.strip().split()
+                        if line[index] > left_list[2]:
+                            new_output.append(" ".join(line))
+                    output = new_output
+                elif left_list[1] == "<":
+                    index = pro.index(left_list[0])
+                    for line in output:
+                        line = line.strip().split()
+                        if line[index] < left_list[2]:
+                            new_output.append(" ".join(line))
+                    output = new_output
+                else:
+                    index = pro.index(left_list[0])
+                    for line in output:
+                        line = line.strip().split()
+                        if line[index] == left_list[2]:
+                            new_output.append(" ".join(line))
+                    output = new_output
+                new_output = []
+                # print("output1",output)
+                if right_list[1] == ">":
+                    index = pro.index(right_list[0])
+                    for line in output:
+                        line = line.strip().split()
+                        if line[index] > right_list[2]:
+                            new_output.append(" ".join(line))
+                    output = new_output
+                elif right_list[1] == "<":
+                    index = pro.index(right_list[0])
+                    for line in output:
+                        line = line.strip().split()
+                        if line[index] < right_list[2]:
+                            new_output.append(" ".join(line))
+                    output = new_output
+
+                else:
+                    index = pro.index(right_list[0])
+                    for line in output:
+                        line = line.strip().split()
+                        # print(line[index],right_list[2])
+                        if line[index] == right_list[2]:
+                            new_output.append(" ".join(line))
+                    output = new_output
+                    # print("output2", output)
+            elif "or" in selectStr:
+                and_index = selectStr.index("or")
+                and_left = selectStr[:and_index]
+                and_right = selectStr[and_index + 2:]
+                left_list = and_left.strip().split()
+                right_list = and_right.strip().split()
+                new_output = []
+                if left_list[0] not in pro:
+                    print("%s is not in properties!" % left_list[0])
+                    return None
+                if right_list[0] not in pro:
+                    print("%s is not in properties!" % right_list[0])
+                    return None
+                if left_list[1] == ">":
+                    index = pro.index(left_list[0])
+                    for line in output:
+                        line = line.strip().split()
+                        if line[index] > left_list[2]:
+                            new_output.append(" ".join(line))
+                    output1 = new_output
+                elif left_list[1] == "<":
+                    index = pro.index(left_list[0])
+                    for line in output:
+                        line = line.strip().split()
+                        if line[index] < left_list[2]:
+                            new_output.append(" ".join(line))
+                    output1 = new_output
+                else:
+                    index = pro.index(left_list[0])
+                    for line in output:
+                        line = line.strip().split()
+                        if line[index] > right_list[2]:
+                            new_output.append(" ".join(line))
+                    output1 = new_output
+                new_output = []
+                # print("output1_or", output)
+                if right_list[1] == ">":
+                    index = pro.index(right_list[0])
+                    for line in output:
+                        line = line.strip().split()
+                        if line[index] > right_list[2]:
+                            new_output.append(" ".join(line))
+                    output2 = new_output
+                elif right_list[1] == "<":
+                    index = pro.index(right_list[0])
+                    for line in output:
+                        line = line.strip().split()
+                        if line[index] < right_list[2]:
+                            new_output.append(" ".join(line))
+                    output2 = new_output
+                else:
+                    index = pro.index(right_list[0])
+                    for line in output:
+                        line = line.strip().split()
+                        if line[index] == right_list[2]:
+                            new_output.append(" ".join(line))
+                    output2 = new_output
+                    # print("output2_or",output2)
+                output = list(set(output1+output2))
+            else:
+                selectStr = selectStr.strip().split()
+                new_output = []
+                if selectStr[0] not in pro:
+                    print("%s is not in properties!" % selectStr[0])
+                    return None
+                if selectStr[1] == ">":
+                    index = pro.index(selectStr[0])
+                    for line in output:
+                        line = line.strip().split()
+                        if line[index] > selectStr[2]:
+                            new_output.append(" ".join(line))
+                    output = new_output
+                elif selectStr[1] == "<":
+                    index = pro.index(selectStr[0])
+                    for line in output:
+                        line = line.strip().split()
+                        if line[index] < selectStr[2]:
+                            new_output.append(" ".join(line))
+                    output = new_output
+                else:
+                    index = pro.index(selectStr[0])
+                    for line in output:
+                        line = line.strip().split()
+                        if line[index] == selectStr[2]:
+                            new_output.append(" ".join(line))
+                    output = new_output
+        return tables, pro, output
 
     def select_from_index(self, table, pro, data):
         indexFilelines = self.readIndexFile()
         tables = [line[0] for line in indexFilelines]
-        pros = [line[1:] for line in indexFilelines]
+        pros = [line[1::2] for line in indexFilelines]
+        types = [line[2::2] for line in indexFilelines]
         if table not in tables and pro not in pros[tables.index(table)]:
             return None
         output = []
+
+    def binary_search(self, strList, type, Element):
+        if type == "int":
+            strList = list(map(int, strList))
+            Element = int(Element)
+            left, right = 0, len(strList) - 1
+            while left <= right:
+                mid = (left + right) // 2
+                if strList[mid] == Element:
+                    return True
+                elif strList[mid] > Element:
+                    right = mid - 1
+                else:
+                    left = mid + 1
+            if left > right:
+                return False
+        else:
+            strList = list(map(str,strList))
+            Element = str(Element)
+            left, right = 0, len(strList) - 1
+            while left <= right:
+                mid = (left + right) // 2
+                if strList[mid] == Element:
+                    return True
+                elif strList[mid] > Element:
+                    right = mid - 1
+                else:
+                    left = mid + 1
+            if left > right:
+                return False
+
 
     def Cartesian_product(self, table1, table2=[]):
         buffer = []
@@ -492,6 +806,9 @@ class compile(object):
     def insert(self, str):
         self.read_file()
         if str[0] == "insert" and str[1] == "into":
+            if self.read_permission(str[2])[1] == "0":
+                print("Sorry! no this permission!")
+                return True
             if str[2] in self.table_names:
                 if str[3] == "(values(":
                     if str[-1] == "))":
@@ -554,6 +871,9 @@ class compile(object):
         match_add = partern_add.match(sent)
         match_drop = partern_drop.match(sent)
         if match_add and match_add.group() == sent:
+            if self.read_permission(str[2])[1] == "0":
+                print("Sorry! no this permission!")
+                return True
             table = str[2]
             pro = str[4]
             pro_type = str[5]
@@ -572,6 +892,9 @@ class compile(object):
             else:
                 print("%s has been in %s!" % (pro, table))
         elif match_drop and match_drop.group() == sent:
+            if self.read_permission(str[2])[1] == "0":
+                print("Sorry! no this permission!")
+                return True
             table = str[2]
             sent = str[4:]
             sent_list = "".join(sent).strip().split(",")
@@ -681,6 +1004,9 @@ class compile(object):
     def drop_table(self, str):
         self.read_file()
         if len(str) == 3 and str[0] == "drop" and str[1] == "table":
+            if self.read_permission(str[2])[0] == "0":
+                print("Sorry! no this permission!")
+                return True
             self.read_file()
             # print(str[2], self.table_names)
             if str[2] not in self.table_names:
@@ -711,6 +1037,9 @@ class compile(object):
         if str[0] == "create" and str[1] == "table":
             if str[3] == "(":
                 if str[-1] == ")":
+                    if self.read_permission(str[2])[0] == "0":
+                        print("Sorry! no this permission!")
+                        return True
                     if str[2] in self.table_names:
                         print("%s has been created !" % str[2])
                         return True

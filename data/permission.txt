@@ -1,0 +1,4 @@
+zrr student 1 1 1 1
+zrr class 1 1 1 1
+cy student 0 1 0 0
+cy class 0 1 0 0

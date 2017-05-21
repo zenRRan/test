@@ -35,6 +35,7 @@ insert into class (values( 15 , java ))
 insert into class (values( 19 , python ))
 
 create index class_ID on class (ID)
+create index class_name on class (name)
 
 drop index class_id
 
@@ -43,4 +44,13 @@ insert into class (values( 5 , ai ))
 delete from class where id = 5
 update class set id = 101  where name = c
 
+______________________________select___________________________________
+create table student ( ID int , name char , classid char )
+insert into student (values( 20143958 , zrr , 1 ))
+insert into student (values( 20142032 , cy , 2 ))
+insert into student (values( 20146666 , chenglong , 4 ))
+insert into student (values( 20146789 , xijinpin , 6 ))
+
+select * from student,class
+select * from student
 

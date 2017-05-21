@@ -1,2 +1,2 @@
-student id int name char sex char department char
+student id int name char classid char
 class id int name char
